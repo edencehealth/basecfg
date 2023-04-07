@@ -48,7 +48,7 @@ jobs:
           set -eux
           source venv/bin/activate
           python -m build
-          twine check
+          twine check dist/*
 
       # https://github.com/pypa/gh-action-pypi-publish
       - name: Publish to PyPI
