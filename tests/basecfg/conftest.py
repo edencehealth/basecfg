@@ -32,6 +32,7 @@ class Config(BaseCfg):
     yn: List[bool] = opt(
         default=[],
         doc="a list of booleans?",
+        sep=";",
     )
 
     temps: List[float] = opt(

@@ -258,21 +258,21 @@ class BaseCfg:
             option_type = self._base_type(option.option_type)
             if option_type == "str":
                 result[optname] = envvar_value
-            if option_type == "bool":
+            elif option_type == "bool":
                 result[optname] = self._parse_bool(envvar_value)
             elif option_type == "int":
                 result[optname] = int(envvar_value)
             elif option_type == "float":
                 result[optname] = float(envvar_value)
             elif option_type == "List[str]":
-                result[optname] = option.sep.split(envvar_value)
+                result[optname] = envvar_value.split(option.sep)
             elif option_type == "List[int]":
-                result[optname] = [int(n) for n in option.sep.split(envvar_value)]
+                result[optname] = [int(n) for n in envvar_value.split(option.sep)]
             elif option_type == "List[float]":
-                result[optname] = [float(f) for f in option.sep.split(envvar_value)]
+                result[optname] = [float(f) for f in envvar_value.split(option.sep)]
             elif option_type == "List[bool]":
                 result[optname] = [
-                    self._parse_bool(s) for s in option.sep.split(envvar_value)
+                    self._parse_bool(s) for s in envvar_value.split(option.sep)
                 ]
             else:
                 raise ValueError(
