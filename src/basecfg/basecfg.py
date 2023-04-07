@@ -178,19 +178,19 @@ class BaseCfg:
 
         return result
 
-    def _bool_list(self, input_list: List[Any]):
+    def _bool_list(self, input_list: List[Any]) -> List[bool]:
         """converts a list of unknown type into a list of bool values"""
         return [bool(x) for x in input_list]
 
-    def _float_list(self, input_list: List[Any]):
+    def _float_list(self, input_list: List[Any]) -> List[float]:
         """converts a list of unknown type into a list of float values"""
         return [float(x) for x in input_list]
 
-    def _int_list(self, input_list: List[Any]):
+    def _int_list(self, input_list: List[Any]) -> List[int]:
         """converts a list of unknown type into a list of int values"""
         return [int(x) for x in input_list]
 
-    def _str_list(self, input_list: List[Any]):
+    def _str_list(self, input_list: List[Any]) -> List[str]:
         """converts a list of unknown type into a list of str values"""
         return [str(x) for x in input_list]
 
@@ -255,23 +255,24 @@ class BaseCfg:
             else:
                 continue
 
+            coerced_value: Any = envvar_value
             option_type = self._base_type(option.option_type)
             if option_type == "str":
-                result[optname] = envvar_value
+                coerced_value = envvar_value
             elif option_type == "bool":
-                result[optname] = self._parse_bool(envvar_value)
+                coerced_value = self._parse_bool(envvar_value)
             elif option_type == "int":
-                result[optname] = int(envvar_value)
+                coerced_value = int(envvar_value)
             elif option_type == "float":
-                result[optname] = float(envvar_value)
+                coerced_value = float(envvar_value)
             elif option_type == "List[str]":
-                result[optname] = envvar_value.split(option.sep)
+                coerced_value = envvar_value.split(option.sep)
             elif option_type == "List[int]":
-                result[optname] = [int(n) for n in envvar_value.split(option.sep)]
+                coerced_value = [int(n) for n in envvar_value.split(option.sep)]
             elif option_type == "List[float]":
-                result[optname] = [float(f) for f in envvar_value.split(option.sep)]
+                coerced_value = [float(f) for f in envvar_value.split(option.sep)]
             elif option_type == "List[bool]":
-                result[optname] = [
+                coerced_value = [
                     self._parse_bool(s) for s in envvar_value.split(option.sep)
                 ]
             else:
@@ -279,6 +280,14 @@ class BaseCfg:
                     f"Don't know how to parse type {option.option_type} "
                     f"({option_type})"
                 )
+            if option.choices:
+                if coerced_value not in option.choices:
+                    raise ValueError(
+                        f"{optname} (envvar: {envvar_name}): "
+                        f'value "{coerced_value}" not in specified '
+                        f"choices list ({str(option.choices)})"
+                    )
+            result[optname] = coerced_value
         return result
 
     def _base_type(self, type_spec: Any) -> str:

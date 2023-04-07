@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ configuration for tests in this package """
 
+import os
 from typing import List, Optional
 
 import pytest
@@ -84,7 +85,8 @@ def json_full_good(tmp_path):
     tmp_file = tmp_path / "json_full_good.json"
     tmp_file.write_text(CONFIG_FULL_GOOD)
     assert tmp_file.read_text() == CONFIG_FULL_GOOD
-    return tmp_file
+    yield tmp_file
+    os.unlink(tmp_file)
 
 
 CONFIG_PARTIAL_GOOD = """
@@ -101,7 +103,16 @@ def json_partial_good(tmp_path):
     tmp_file = tmp_path / "json_partial_good.json"
     tmp_file.write_text(CONFIG_PARTIAL_GOOD)
     assert tmp_file.read_text() == CONFIG_PARTIAL_GOOD
-    return tmp_file
+    yield tmp_file
+    os.unlink(tmp_file)
+
+
+@pytest.fixture(scope="function")
+def temp_envvars():
+    """fixture which saves envvars and then restores them after a test runs"""
+    saved_env = os.environ.copy()
+    yield lambda: None
+    os.environ = saved_env
 
 
 CONFIG_BAD_FORMAT = """
@@ -139,7 +150,8 @@ def bad_json_inputs(tmp_path):
         tmp_file.write_text(content)
         assert tmp_file.read_text() == content
         result[name] = tmp_file
-    return result
+    yield result
+    _ = [os.unlink(path) for path in result.values()]
 
 
 # @pytest.fixture()

@@ -88,8 +88,9 @@ def test_json_bad_value(config, bad_json_inputs):
         assert conf.favorite_color != "white"
 
 
-def test_envvar_types(config):
+def test_envvar_types(config, temp_envvars):
     """tests envvars of various types"""
+    temp_envvars()
     os.environ["VERBOSE"] = "TRUE"
     os.environ["batch_size"] = "42"  # lowercase support is there
     os.environ["INPUT_FILES"] = "foo.py,bar.py,baz.py"
@@ -98,7 +99,6 @@ def test_envvar_types(config):
     os.environ["FAVORITE_COLOR"] = "green"
     conf = config()
 
-    # assert the defaults
     assert conf is not None
     assert conf.verbose is True
     assert conf.batch_size == 42
@@ -106,3 +106,19 @@ def test_envvar_types(config):
     assert conf.yn == [True, False, True, True, False]
     assert conf.temps == [98.6, 101.2, 212.9]
     assert conf.favorite_color == "green"
+
+
+def test_envvar_bad_type(config, temp_envvars):
+    """test envvar with value that cannot be coerced into the correct type"""
+    temp_envvars()
+    os.environ["BATCH_SIZE"] = "x"
+    with pytest.raises(ValueError):
+        _ = config()
+
+
+def test_envvar_bad_value(config, temp_envvars):
+    """test envvar with a value not in the list of available choices"""
+    temp_envvars()
+    os.environ["FAVORITE_COLOR"] = "white"
+    with pytest.raises(ValueError):
+        _ = config()
