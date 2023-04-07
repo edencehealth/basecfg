@@ -122,3 +122,113 @@ def test_envvar_bad_value(config, temp_envvars):
     os.environ["FAVORITE_COLOR"] = "white"
     with pytest.raises(ValueError):
         _ = config()
+
+
+def test_args_help(config, capsys):
+    """test -h support in argparser"""
+    with pytest.raises(SystemExit):
+        _ = config(cli_args=["-h"])
+    captured = capsys.readouterr()
+    expected_contents = (
+        "--help",
+        "--verbose",
+        "--batch-size",
+        "--input-files",
+        "--yn",
+        "--temps",
+        "--favorite-color",
+    )
+    for string in expected_contents:
+        assert string in captured.out
+
+
+def test_args_full(config):
+    """test good cli args"""
+    conf = config(
+        cli_args=[
+            # fmt: off
+            "--no-verbose",
+            "--batch-size", "12345",
+            "--input-files", "/tmp/one.txt",
+            "--input-files", "/tmp/two.txt",
+            "--input-files", "/tmp/three.txt",
+            "--yn", "no",
+            "--yn", "yes",
+            "--temps", "212.0",
+            "--temps", "98.6",
+            "--temps", "32.0",
+            "--favorite-color", "orange",
+            # fmt: on
+        ]
+    )
+    assert conf is not None
+    assert conf.verbose is False
+    assert conf.batch_size == 12345
+    assert conf.input_files == ["/tmp/one.txt", "/tmp/two.txt", "/tmp/three.txt"]
+    assert conf.yn == [False, True]
+    assert conf.temps == [212.0, 98.6, 32.0]
+    assert conf.favorite_color == "orange"
+
+
+def test_args_bad_type(config, capsys):
+    """test cli args with value that cannot be coerced into the correct type"""
+    with pytest.raises(SystemExit):
+        _ = config(
+            cli_args=[
+                # fmt: off
+                "--batch-size", "xyz",
+                # fmt: on
+            ]
+        )
+    captured = capsys.readouterr()
+    expected_content = "error: argument --batch-size: invalid int value: 'xyz'"
+    assert expected_content in captured.err
+
+
+def test_args_bad_value(config, capsys):
+    """test cli args with value not in the list of available choices"""
+    with pytest.raises(SystemExit):
+        _ = config(
+            cli_args=[
+                # fmt: off
+                "--favorite-color", "mauve",
+                # fmt: on
+            ]
+        )
+    captured = capsys.readouterr()
+    expected_content = (
+        "error: argument --favorite-color: invalid choice: 'mauve' "
+        "(choose from 'blue', 'green', 'orange')"
+    )
+    assert expected_content in captured.err
+
+
+def test_all_sources(config, temp_envvars, json_partial_good):
+    """
+    test all of the following in a single setup:
+    * a value from defaults
+    * a value from the json config
+    * a value from envvars
+    * a value from cli args
+    """
+    # default: verbose
+    # json: favorite_color
+    # envvars: batch_size
+    # cli: input_files
+    temp_envvars()
+    os.environ["BATCH_SIZE"] = "28934"
+    cli_args = [
+        # fmt: off
+        "--input-files", "/tmp/one.txt",
+        "--input-files", "/tmp/two.txt",
+        "--input-files", "/tmp/three.txt",
+        # fmt: on
+    ]
+    conf = config(json_partial_good, True, cli_args=cli_args)
+    assert conf is not None
+    assert conf.verbose is False
+    assert conf.batch_size == 28934
+    assert conf.input_files == ["/tmp/one.txt", "/tmp/two.txt", "/tmp/three.txt"]
+    assert conf.yn == []
+    assert conf.temps == []
+    assert conf.favorite_color == "green"

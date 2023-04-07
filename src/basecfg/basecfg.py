@@ -96,7 +96,10 @@ class BaseCfg:
     _options: Dict[str, OptionMetadata]
 
     def __init__(
-        self, json_config_path: Optional[str] = None, json_required=False
+        self,
+        json_config_path: Optional[str] = None,
+        json_required=False,
+        cli_args: Optional[Sequence[str]] = None,
     ) -> None:
         """parse data from various sources according to options"""
         # step 1 is to enrich our metadata about the configuration options, at
@@ -117,7 +120,7 @@ class BaseCfg:
                 setattr(self, key, val)
         for key, val in self._parse_envvars().items():
             setattr(self, key, val)
-        for key, val in self._parse_args().items():
+        for key, val in self._parse_args(cli_args).items():
             if val is not None:
                 setattr(self, key, val)
 
@@ -198,7 +201,7 @@ class BaseCfg:
         """return a list of keys in this configuration"""
         return [key for key in self._options if not key.startswith("_")]
 
-    def _parse_args(self) -> Dict[str, Any]:
+    def _parse_args(self, cli_args: Optional[Sequence[str]] = None) -> Dict[str, Any]:
         """generate an args parser and call it"""
         argp = argparse.ArgumentParser()
         for optname, option in self._options.items():
@@ -237,7 +240,7 @@ class BaseCfg:
                 **arg_config,
             )
 
-        return vars(argp.parse_args())
+        return vars(argp.parse_args(args=cli_args))
 
     def _parse_envvars(self) -> Dict[str, Any]:
         """parse environment variables for configuration values"""
