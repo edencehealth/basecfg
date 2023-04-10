@@ -7,12 +7,9 @@ from typing import List, Optional
 
 import pytest
 
-from basecfg import BaseCfg
-
-opt = BaseCfg.optfunc()
+from basecfg import BaseCfg, opt
 
 
-@opt.link
 class Config(BaseCfg):
     """Configuration for a fictional app"""
 
@@ -46,6 +43,7 @@ class Config(BaseCfg):
         default="blue",
         choices=["blue", "green", "orange"],
         doc="a choice between the best colors",
+        parser=lambda input: str(input).lower(),
     )
 
 
