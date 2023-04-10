@@ -6,7 +6,7 @@ import pytest
 def test_args_help(config, capsys):
     """test -h support in argparser"""
     with pytest.raises(SystemExit):
-        _ = config(cli_args=["-h"])
+        _ = config(cli_args=["-h"], version="98.76.54")
     captured = capsys.readouterr()
     expected_contents = (
         "--help",
@@ -16,9 +16,31 @@ def test_args_help(config, capsys):
         "--yn",
         "--temps",
         "--favorite-color",
+        "--version",
     )
     for string in expected_contents:
         assert string in captured.out
+
+
+def test_args_version(config, capsys):
+    """verify that setting version on the constructor enables --version functionality"""
+    with pytest.raises(SystemExit):
+        _ = config(cli_args=["--version"], version="98.76.54")
+    captured = capsys.readouterr()
+    expected_content = "98.76.54\n"
+    assert expected_content == captured.out
+
+
+def test_args_version_unset(config, capsys):
+    """
+    verify that --version functionality is unimplemented if version is not set on the
+    constructor
+    """
+    with pytest.raises(SystemExit):
+        _ = config(cli_args=["--version"])
+    captured = capsys.readouterr()
+    expected_content = "error: unrecognized arguments: --version"
+    assert expected_content in captured.err
 
 
 def test_args_full(config):

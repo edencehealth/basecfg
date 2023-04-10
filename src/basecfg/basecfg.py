@@ -62,6 +62,7 @@ class BaseCfg:
     _prog: Optional[str] = None
     _prog_description: Optional[str] = None
     _prog_epilog: Optional[str] = None
+    _version: Optional[str] = None
 
     def __init__(
         self,
@@ -74,6 +75,7 @@ class BaseCfg:
         prog: Optional[str] = None,
         prog_description: Optional[str] = None,
         prog_epilog: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> None:
         """
         Creates a new instance of the configuration class; all arguments are optional
@@ -92,6 +94,7 @@ class BaseCfg:
         self._prog = prog
         self._prog_description = prog_description
         self._prog_epilog = prog_epilog
+        self._version = version
 
         # step 1: enrich our metadata about the configuration options and load
         # default values. At this point we finally have the names of the fields
@@ -254,6 +257,8 @@ class BaseCfg:
             description=self._prog_description,
             epilog=self._prog_epilog,
         )
+        if self._version:
+            argp.add_argument("--version", action="version", version=self._version)
         for optname, option in self._options.items():
             arg_name = "--" + optname.replace("_", "-")
             option_type = self._base_type(option.option_type)
