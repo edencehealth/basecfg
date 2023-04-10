@@ -17,7 +17,6 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
-    Type,
     TypeVar,
     Union,
     get_args,
@@ -26,7 +25,7 @@ from typing import (
 
 # pylint: disable=invalid-name
 OptType = TypeVar("OptType")
-OptParserInput = Union[str, int, float]
+OptParserInput = Union[str, int, float, list]
 
 empty_line = re.compile(r"^\s*([#].*|$)")
 
@@ -57,7 +56,8 @@ class BaseCfg:
     them with basecfg.opt
     """
 
-    _optmeta: List[OptionMetadata]  # this is an attribute set by opt.link
+    _optmeta: List[OptionMetadata] = []
+    _optmeta_reset: bool = True
     _options: Dict[str, OptionMetadata]
     _prog: Optional[str] = None
     _prog_description: Optional[str] = None
@@ -99,7 +99,11 @@ class BaseCfg:
         # step 1: enrich our metadata about the configuration options and load
         # default values. At this point we finally have the names of the fields
         # and are aware of their resolved type annotations.
-        option_metadata = iter(self._optmeta)
+
+        BaseCfg._optmeta_reset = True
+        # copying the _optmeta list from a BaseCfg class attr to an attr of this subclass
+        setattr(self.__class__, "_optmeta", BaseCfg._optmeta.copy())
+        option_metadata = iter(self.__class__._optmeta)
 
         self._options = {}
         for key, val in self.__class__.__annotations__.items():
@@ -136,43 +140,6 @@ class BaseCfg:
             if val is not None:
                 setattr(self, key, val)
 
-    @classmethod
-    def optfunc(cls):
-        """
-        helper function which returns a uniquely-namespaced opt function which
-        can  be used to define metadata for BaseCfg option fields
-        """
-        namespace: List[OptionMetadata] = []
-
-        def opt(
-            default: OptType,
-            doc: str,
-            required: bool = False,
-            parser: Optional[Callable[[OptParserInput], OptType]] = None,
-            choices: Optional[Sequence[OptType]] = None,
-            sep: str = ",",
-            redact: bool = False,
-        ) -> OptType:
-            """
-            opt captures data related to a BaseCfg option and returns the default
-            the annotated type of the return value is determined by the type of the
-            given default argument
-            """
-            namespace.append(
-                OptionMetadata(
-                    None, None, default, doc, required, parser, choices, sep, redact
-                )
-            )
-            return default
-
-        def link(cls) -> Type[cls]:
-            setattr(cls, "_optmeta", namespace)
-            return cls
-
-        opt.link = link
-
-        return opt
-
     def _parse_json_config(self, path: str, required: bool = False) -> Dict[str, Any]:
         """parses the configuration from the json file at the given path"""
         result: Dict[str, Any] = {}
@@ -205,7 +172,9 @@ class BaseCfg:
                 }
 
                 coerced_value = val
-                if val_type != option_type:
+                if option.parser:
+                    coerced_value = option.parser(val)
+                elif val_type != option_type:
                     if val_type == "list":
                         if option_type not in coercions:
                             raise TypeError(
@@ -266,7 +235,10 @@ class BaseCfg:
             # use this for as little as possible (because it doesn't get type checked)
             # it could be good to switch to TypedDict for this
             arg_config: Dict[str, Any] = {"action": "store"}
-            if option_type == "bool":
+
+            if option.parser:
+                arg_config["type"] = option.parser
+            elif option_type == "bool":
                 arg_config["action"] = argparse.BooleanOptionalAction
             elif option_type == "int":
                 arg_config["type"] = int
@@ -464,3 +436,27 @@ class BaseCfg:
     def __iter__(self):
         """returns keys iterator"""
         return iter(self._options.keys())
+
+
+def opt(
+    default: OptType,
+    doc: str,
+    required: bool = False,
+    parser: Optional[Callable[[OptParserInput], OptType]] = None,
+    choices: Optional[Sequence[OptType]] = None,
+    sep: str = ",",
+    redact: bool = False,
+) -> OptType:
+    """
+    opt captures data related to a BaseCfg option and returns the default
+    the annotated type of the return value is determined by the type of the
+    given default argument
+    """
+    # pylint: disable=protected-access
+    if BaseCfg._optmeta_reset:
+        BaseCfg._optmeta = []
+        BaseCfg._optmeta_reset = False
+    BaseCfg._optmeta.append(
+        OptionMetadata(None, None, default, doc, required, parser, choices, sep, redact)
+    )
+    return default

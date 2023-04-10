@@ -58,7 +58,7 @@ def test_args_full(config):
             "--temps", "212.0",
             "--temps", "98.6",
             "--temps", "32.0",
-            "--favorite-color", "orange",
+            "--favorite-color", "Orange",
             # fmt: on
         ]
     )
