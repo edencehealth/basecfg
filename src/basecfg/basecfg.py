@@ -259,7 +259,7 @@ class BaseCfg:
             argp.add_argument(
                 arg_name,
                 dest=optname,
-                help=option.doc + f" (default {str(option.default)})",
+                help=option.doc + f" (default: {repr(option.default)})",
                 required=False,
                 choices=option.choices,
                 **arg_config,
@@ -349,7 +349,7 @@ class BaseCfg:
                 if "=" not in line:
                     raise ValueError(
                         f'envfile parsing error; file:"{path}" line:{i}; data line '
-                        f'contains no "-" character'
+                        f'contains no "=" character'
                     )
                 key, value = line.split("=", 1)
                 result[key.lower().strip()] = value.strip()
