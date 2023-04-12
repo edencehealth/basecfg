@@ -114,13 +114,13 @@ options:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
   --server-username SERVER_USERNAME
-                        The username to use on the server (default demoperson)
+                        The username to use on the server (default: "demoperson")
   --server-password SERVER_PASSWORD
-                        The password to use on the server (default None)
+                        The password to use on the server (default: None)
   --verbose, --no-verbose
-                        whether to log verbosely (default False)
+                        whether to log verbosely (default: False)
   --batch-size BATCH_SIZE
-                        how many objects to transfer at a time (default None)
+                        how many objects to transfer at a time (default: None)
 ```
 
 ## Invocation
