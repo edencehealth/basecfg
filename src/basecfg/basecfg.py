@@ -7,6 +7,7 @@ and command-line arguments
 # pylint: disable=too-many-arguments
 import argparse
 import json
+import logging
 import os
 import re
 from typing import (
@@ -63,6 +64,13 @@ class BaseCfg:
     _prog_description: Optional[str] = None
     _prog_epilog: Optional[str] = None
     _version: Optional[str] = None
+    _autoredact_tokens: Sequence[str] = (
+        "key",
+        "pass",
+        "private",
+        "secret",
+        "token",
+    )
 
     def __init__(
         self,
@@ -436,6 +444,40 @@ class BaseCfg:
     def __iter__(self):
         """returns keys iterator"""
         return iter(self._options.keys())
+
+    def _looks_sensitive(self, keyname: str) -> bool:
+        """
+        returns true of the given keyname appears to refer to a secret that should
+        be redacted when logging the configuration
+        """
+        keyname = keyname.lower()
+        for token in self._autoredact_tokens:
+            if token in keyname:
+                return True
+        return False
+
+    def logcfg(
+        self,
+        cfglogger: logging.Logger,
+        autoredact: bool = True,
+        heading: str = "running configuration:",
+        item_prefix: str = "  ",
+    ):
+        """
+        use the given logger to report the cfg info;
+        if "autoredact" is true, values with names that resemble passwords are redacted;
+        "heading" is logged before the configuration items are reported;
+        "item_prefix" is prepended to each configuration item in the output
+        """
+        cfglogger.info(heading)
+        for key in self:
+            if self._options[key].redact:
+                value = "--REDACTED--"
+            elif autoredact and self._looks_sensitive(key):
+                value = "--AUTO-REDACTED--"
+            else:
+                value = repr(getattr(self, key))
+            cfglogger.info("%s%s: %s", item_prefix, key, value)
 
 
 def opt(
