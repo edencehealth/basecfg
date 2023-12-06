@@ -1,16 +1,17 @@
 [project]
 name = "basecfg"
-version = "2.1.0"
+version = "2.1.1"
 authors = [
   { name="Ben Burke", email="actualben@users.noreply.github.com" },
+  { name="edenceHealth NV", email="info@edence.health" },
 ]
 description = "typed 12-factor app configuration helper"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
+  "Operating System :: OS Independent",
 ]
 
 [build-system]
@@ -44,8 +45,8 @@ exclude_dirs = ["tests",]
 [tool.pylint]
 max-line-length = 100
 disable = [
-    "too-few-public-methods",
-    "too-many-arguments",
+  "too-few-public-methods",
+  "too-many-arguments",
 ]
 
 [tool.pytest.ini_options]
@@ -53,7 +54,7 @@ disable = [
 minversion = "6.0"
 addopts = "-v"
 testpaths = [
-    "tests/",
+  "tests/",
 ]
 pythonpath = [
   "src"
