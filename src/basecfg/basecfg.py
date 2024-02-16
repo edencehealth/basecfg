@@ -18,6 +18,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Tuple,
     TypeVar,
     Union,
     get_args,
@@ -29,6 +30,18 @@ OptType = TypeVar("OptType")
 OptParserInput = Union[str, int, float, list]
 
 empty_line = re.compile(r"^\s*([#].*|$)")
+
+
+def get_type_name(annotation):
+    """
+    returns an approximation of the original string form of a type annotation
+    """
+    if hasattr(annotation, "__origin__"):
+        # Handle generic types like Optional[int]
+        type_str = str(annotation).replace("typing.", "")
+        return type_str
+    # Handle basic types like int, str, etc.
+    return annotation.__name__
 
 
 class OptionMetadata(NamedTuple):
@@ -45,7 +58,7 @@ class OptionMetadata(NamedTuple):
     parser: Optional[Callable[[OptParserInput], Any]]
     choices: Optional[Any]
     sep: str
-    redact: bool
+    redact: Optional[bool]
 
 
 class BaseCfg:
@@ -109,7 +122,7 @@ class BaseCfg:
         # and are aware of their resolved type annotations.
 
         BaseCfg._optmeta_reset = True
-        # copying the _optmeta list from a BaseCfg class attr to an attr of this subclass
+        # copying the _optmeta list from a BaseCfg class attr to an attr of the subclass
         setattr(self.__class__, "_optmeta", BaseCfg._optmeta.copy())
         option_metadata = iter(self.__class__._optmeta)
 
@@ -456,12 +469,28 @@ class BaseCfg:
                 return True
         return False
 
+    def _get_filtered_values(self, autoredact: bool = True) -> Dict[str, str]:
+        """return a dict of the config with appropriate filtering for use in logs"""
+        filtered = {}
+        for key in self:
+            redact = self._options[key].redact
+            if redact is None:
+                if autoredact and self._looks_sensitive(key):
+                    filtered[key] = "--AUTO-REDACTED--"
+            elif redact:
+                filtered[key] = "--REDACTED--"
+            if key not in filtered:
+                filtered[key] = repr(getattr(self, key))
+        return filtered
+
     def logcfg(
         self,
         cfglogger: logging.Logger,
         autoredact: bool = True,
         heading: str = "running configuration:",
         item_prefix: str = "  ",
+        json_format: bool = False,
+        json_multiline: bool = True,
     ):
         """
         use the given logger to report the cfg info;
@@ -469,15 +498,75 @@ class BaseCfg:
         "heading" is logged before the configuration items are reported;
         "item_prefix" is prepended to each configuration item in the output
         """
+        filtered = self._get_filtered_values(autoredact)
         cfglogger.info(heading)
+
+        if json_format:
+            cfg_json = json.dumps(
+                filtered, indent=2 if json_multiline else None, sort_keys=True
+            )
+            if json_multiline:
+                for line in cfg_json.splitlines():
+                    cfglogger.info("%s%s", item_prefix, line)
+                return
+            cfglogger.info("%s%s", item_prefix, cfg_json)
+            return
+
+        for k, v in filtered.items():
+            cfglogger.info("%s%s: %s", item_prefix, k, v)
+
+    def getdesc_json(self) -> str:
+        """
+        return a json document showing all configuration options with their default
+        values
+        """
+        result: Dict[str, str] = {}
         for key in self:
-            if self._options[key].redact:
-                value = "--REDACTED--"
-            elif autoredact and self._looks_sensitive(key):
-                value = "--AUTO-REDACTED--"
-            else:
-                value = repr(getattr(self, key))
-            cfglogger.info("%s%s: %s", item_prefix, key, value)
+            result[key.upper()] = self._options[key].default
+        return json.dumps(result, indent=2)
+
+    def getdesc_md(self) -> str:
+        """
+        return a markdown document which describes the configuration in a way helpful to
+        end users who want to see a description of the available options
+        """
+        result: List[Tuple[str, str, str, str]] = [
+            (
+                "Environment Variable",
+                "Type",
+                "Default Value",
+                "Description",
+            ),
+        ]
+        for key in self:
+            options = self._options[key]
+            result.append(
+                (
+                    f"`{key.upper()}`",
+                    f"`{get_type_name(options.option_type)}`",
+                    f"`{options.default!s}`",
+                    options.doc,
+                )
+            )
+
+        widths: List[int] = [
+            max((len(row[col]) for row in result)) for col in range(len(result[0]))
+        ]
+
+        def fmt_line(*fields) -> str:
+            """return the markdown table line formatted appropriately"""
+            return "".join(
+                [f"{field:<{widths[i]}} | " for i, field in enumerate(fields[:-1])]
+                + [f"{fields[-1]}\n"]
+            )
+
+        retval = ""
+        retval += fmt_line(*result.pop(0))
+        retval += fmt_line(*["-" * pad_width for pad_width in widths])
+        for line in result:
+            retval += fmt_line(*line)
+
+        return retval
 
 
 def opt(
@@ -487,7 +576,7 @@ def opt(
     parser: Optional[Callable[[OptParserInput], OptType]] = None,
     choices: Optional[Sequence[OptType]] = None,
     sep: str = ",",
-    redact: bool = False,
+    redact: Optional[bool] = None,
 ) -> OptType:
     """
     opt captures data related to a BaseCfg option and returns the default
