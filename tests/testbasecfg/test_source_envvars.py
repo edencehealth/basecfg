@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" test configuration via environment variable """
+"""test configuration via environment variable"""
+
 import os
 
 import pytest

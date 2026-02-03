@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" general access method tests """
+"""general access method tests"""
+
 import logging
 
 import pytest

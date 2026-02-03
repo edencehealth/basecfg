@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" test configuration via JSON config file """
+"""test configuration via JSON config file"""
+
 import json
 
 import pytest
