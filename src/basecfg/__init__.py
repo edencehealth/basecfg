@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" module """
+"""module"""
+
 from .basecfg import BaseCfg, opt
 
 __all__ = ["BaseCfg", "opt"]

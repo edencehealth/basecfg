@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" tests for loading values from docker secrets """
+"""tests for loading values from docker secrets"""
+
 # pylint: disable=duplicate-code
 import pytest
 

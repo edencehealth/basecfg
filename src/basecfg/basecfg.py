@@ -4,7 +4,8 @@ module for specifying configuration options as a class with typed members and
 loading the configuration values from json config files, environment variables,
 and command-line arguments
 """
-# pylint: disable=too-many-arguments
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 import argparse
 import json
 import logging
@@ -319,8 +320,7 @@ class BaseCfg:
                 ]
             else:
                 raise ValueError(
-                    f"Don't know how to parse type {option.option_type} "
-                    f"({option_type})"
+                    f"Don't know how to parse type {option.option_type} ({option_type})"
                 )
 
             if option.choices:

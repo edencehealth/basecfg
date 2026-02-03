@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" tests for loading values from envfile sources"""
+"""tests for loading values from envfile sources"""
+
 # pylint: disable=duplicate-code
 import pytest
 

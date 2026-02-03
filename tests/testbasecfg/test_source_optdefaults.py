@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" test configuration via default value """
+"""test configuration via default value"""
+
 import pytest
 
 

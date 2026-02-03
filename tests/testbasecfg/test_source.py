@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" general source tests """
+"""general source tests"""
+
 import os
 
 
